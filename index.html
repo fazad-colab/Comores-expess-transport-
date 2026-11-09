@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comores Express Transport</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet.js pour la Carte -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<meta name="description" content="Réservez taxi-brousse, minibus, bus et vedettes aux Comores.">
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1d4ed8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body class="bg-gray-100 font-sans pb-12">
+
+    <!-- En-tête -->
+    <header class="bg-blue-700 text-white p-4 shadow-lg sticky top-0 z-40">
+        <div class="max-w-xl mx-auto flex justify-between items-center">
+            <h1 class="text-lg font-bold flex items-center gap-2">
+                <i class="fa-solid fa-route text-yellow-400"></i> Comores Transport
+            </h1>
+            <button onclick="toggleModeAdmin()" id="btnModeAdmin" class="text-xs bg-blue-800 hover:bg-blue-900 border border-blue-400 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                <i class="fa-solid fa-user-shield"></i> <span id="labelMode">Espace Chauffeur</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Zone principale -->
+    <main class="max-w-xl mx-auto p-4 space-y-6">
+
+        <!-- VUE PASSAGER -->
+        <div id="vuePassager" class="space-y-6">
+            
+            <!-- Carte Interactive -->
+            <section class="bg-white rounded-xl shadow-md p-3">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-map-location-dot text-blue-600"></i> Carte des Trajets aux Comores
+                    </h2>
+                    <span id="carteInfo" class="text-[11px] text-gray-500 font-medium">Sélectionnez une route</span>
+                </div>
+                <div id="map" class="h-48 w-full rounded-lg border border-gray-200 z-10"></div>
+            </section>
+
+            <!-- Formulaire de Recherche & Filtrage -->
+            <section class="bg-white rounded-xl shadow-md p-4">
+                <h2 class="text-sm font-bold text-gray-800 mb-3 border-b pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-magnifying-glass text-blue-600"></i> Trouver un départ
+                </h2>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">Départ</label>
+                        <select id="depart" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs text-gray-800">
+                            <option value="Moroni">Moroni (Grande Comore)</option>
+                            <option value="Mitsamiouli">Mitsamiouli (Grande Comore)</option>
+                            <option value="Foumboni">Foumboni (Grande Comore)</option>
+                            <option value="Mutsamudu">Mutsamudu (Anjouan)</option>
+                            <option value="Fomboni">Fomboni (Mohéli)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">Destination</label>
+                        <select id="arrivee" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs text-gray-800">
+                            <option value="Foumboni">Foumboni (Grande Comore)</option>
+                            <option value="Moroni">Moroni (Grande Comore)</option>
+                            <option value="Mitsamiouli">Mitsamiouli (Grande Comore)</option>
+                            <option value="Mutsamudu">Mutsamudu (Anjouan)</option>
+                            <option value="Fomboni">Fomboni (Mohéli)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Catégorie de transport</label>
+                    <select id="filtreCategorie" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs text-gray-800">
+                        <option value="tous">Toutes les catégories</option>
+                        <option value="taxi">Taxi-brousse / Taxi-ville (4 places max)</option>
+                        <option value="minibus">Minibus Express (15 places max)</option>
+                        <option value="bus">Grand Bus Interurbain (30 places max)</option>
+                        <option value="vedette">Vedette Inter-îles (20 places max)</option>
+                    </select>
+                </div>
+
+                <button onclick="filtrerTrajets()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-xs transition shadow flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-filter"></i> Afficher les départs
+                </button>
+            </section>
+
+            <!-- Liste des Trajets -->
+            <section class="space-y-3">
+                <h3 class="text-sm font-bold text-gray-800 flex justify-between items-center">
+                    <span>Trajets disponibles</span>
+                    <span id="nbTrajetsCount" class="text-xs font-normal text-gray-500">0 trouvé(s)</span>
+                </h3>
+                <div id="listeTrajets" class="space-y-3"></div>
+            </section>
+
+            <!-- Mes Billets réservés -->
+            <section class="bg-white rounded-xl shadow-md p-4">
+                <h3 class="text-sm font-bold text-gray-800 mb-3 border-b pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-ticket text-blue-600"></i> Mes Billets Réservés
+                </h3>
+                <div id="mesBilletsContainer" class="space-y-3"></div>
+            </section>
+        </div>
+
+        <!-- VUE CHAUFFEUR / ADMIN (GROUPE 4) -->
+        <div id="vueAdmin" class="hidden space-y-6">
+            
+            <!-- Tableau de bord Chauffeur : Gestion des départs en direct -->
+            <section class="bg-white rounded-xl shadow-md p-4 border-l-4 border-orange-500">
+                <h2 class="text-sm font-bold text-gray-800 mb-3 border-b pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-orange-500"></i> Gestion Manuelle de mes Trajets
+                </h2>
+                <div id="listeTrajetsChauffeur" class="space-y-3"></div>
+            </section>
+
+            <!-- Formulaire de Publication -->
+            <section class="bg-white rounded-xl shadow-md p-4 border-l-4 border-blue-600">
+                <h2 class="text-sm font-bold text-gray-800 mb-3 border-b pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-plus-circle text-blue-600"></i> Publier un nouveau trajet
+                </h2>
+                <form id="formAjoutTrajet" onsubmit="ajouterTrajet(event)" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-500">Ville départ</label>
+                            <select id="newDepart" onchange="calculerMetriquesAdmin()" class="w-full bg-gray-50 border rounded p-2 text-xs">
+                                <option value="Moroni">Moroni</option>
+                                <option value="Mitsamiouli">Mitsamiouli</option>
+                                <option value="Foumboni">Foumboni</option>
+                                <option value="Mutsamudu">Mutsamudu</option>
+                                <option value="Fomboni">Fomboni</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-500">Ville arrivée</label>
+                            <select id="newArrivee" onchange="calculerMetriquesAdmin()" class="w-full bg-gray-50 border rounded p-2 text-xs">
+                                <option value="Foumboni">Foumboni</option>
+                                <option value="Moroni">Moroni</option>
+                                <option value="Mitsamiouli">Mitsamiouli</option>
+                                <option value="Mutsamudu">Mutsamudu</option>
+                                <option value="Fomboni">Fomboni</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-500">Type de véhicule</label>
+                            <select id="newCategorie" onchange="calculerMetriquesAdmin()" class="w-full bg-gray-50 border rounded p-2 text-xs">
+                                <option value="taxi">Taxi-brousse (4 places)</option>
+                                <option value="minibus">Minibus Express (15 places)</option>
+                                <option value="bus">Grand Bus (30 places)</option>
+                                <option value="vedette">Vedette Bateau (20 places)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-500">Heure de départ</label>
+                            <input type="time" id="newHeure" required class="w-full bg-gray-50 border rounded p-2 text-xs">
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-2 space-y-2">
+                        <span class="text-xs font-bold text-gray-700 block">Identité du Chauffeur / Véhicule</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="newChauffeurNom" placeholder="Nom du chauffeur" required class="bg-gray-50 border rounded p-2 text-xs">
+                            <input type="text" id="newChauffeurTel" placeholder="Tél (ex: 3320000)" required class="bg-gray-50 border rounded p-2 text-xs">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="newChauffeurVehicule" placeholder="Véhicule (ex: Peugeot 406)" required class="bg-gray-50 border rounded p-2 text-xs">
+                            <input type="text" id="newChauffeurPlaque" placeholder="Matricule (ex: 4210-KM)" required class="bg-gray-50 border rounded p-2 text-xs">
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-2.5 rounded-lg text-xs space-y-1 border border-blue-100">
+                        <div class="flex justify-between text-gray-700">
+                            <span>Distance estimée :</span> <strong id="adminDistance">-- km</strong>
+                        </div>
+                        <div class="flex justify-between text-gray-700">
+                            <span>Durée estimée :</span> <strong id="adminDuree">--</strong>
+                        </div>
+                        <div class="flex justify-between text-blue-800 font-bold border-t border-blue-200 pt-1">
+                            <span>Prix calculé conseillé :</span> <span id="adminPrixConseille">-- KMF</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg text-xs shadow">
+                        Publier le trajet
+                    </button>
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <!-- MODAL DE RÉSERVATION (GROUPE 4 AVEC BAGAGES & ESCALES) -->
+    <div id="modalReservation" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="text-base font-bold text-gray-800">Réserver une place</h3>
+                <button onclick="fermerModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div id="modalDetails" class="bg-gray-50 p-3 rounded-xl text-xs space-y-1.5 border border-gray-100"></div>
+
+            <div id="modalChauffeurFiche" class="bg-blue-50 p-3 rounded-xl text-xs border border-blue-100 space-y-1"></div>
+
+            <!-- Sélection du siège -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-2">Choisir votre siège</label>
+                <div id="grilleSieges" class="grid gap-2 bg-gray-100 p-3 rounded-xl border border-gray-200"></div>
+            </div>
+
+            <!-- GROUPE 4 : Options supplémentaires (Bagages / Escale) -->
+            <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-2">
+                <span class="text-xs font-bold text-gray-800 block">Options & Bagages</span>
+                
+                <label class="flex items-center justify-between text-xs text-gray-700 cursor-pointer">
+                    <span class="flex items-center gap-1.5">
+                        <input type="checkbox" id="optionBagage" onchange="recalculerPrixModal()" class="rounded">
+                        Bagage volumineux (+500 KMF)
+                    </span>
+                    <i class="fa-solid fa-suitcase text-gray-400"></i>
+                </label>
+
+                <div class="pt-1">
+                    <label class="block text-[11px] font-semibold text-gray-500 mb-1">Demande d'escale spécifique (optionnel)</label>
+                    <input type="text" id="optionEscale" placeholder="Ex: Arrêt devant l'hôpital" class="w-full bg-white border rounded p-1.5 text-xs">
+                </div>
+            </div>
+
+            <!-- Calcul du prix total final -->
+            <div class="bg-blue-100 p-3 rounded-xl flex justify-between items-center text-xs font-bold text-blue-900">
+                <span>Prix Total Final :</span>
+                <span id="prixTotalFinal" class="text-sm text-blue-700">0 KMF</span>
+            </div>
+
+            <!-- Choix du moment de paiement -->
+            <div class="space-y-2 border-t pt-3">
+                <label class="block text-xs font-bold text-gray-800">Quand & Comment souhaitez-vous payer ?</label>
+
+                <label class="border rounded-xl p-2.5 flex items-start gap-2.5 cursor-pointer hover:bg-blue-50/50 border-gray-200">
+                    <input type="radio" name="optionPaiement" value="maintenant" checked onchange="toggleFormPaiement()" class="mt-1">
+                    <div>
+                        <span class="text-xs font-bold text-gray-800 block">Payer maintenant (Mobile Money)</span>
+                        <span class="text-[11px] text-gray-500 block">Billet validé instantanément via Mvola ou HuriPay</span>
+                    </div>
+                </label>
+
+                <div id="zoneMobileMoney" class="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-2">
+                    <div class="flex gap-2">
+                        <label class="flex-1 border bg-white p-2 rounded-lg flex items-center gap-2 text-xs font-medium cursor-pointer">
+                            <input type="radio" name="providerMobile" value="Mvola" checked> Mvola
+                        </label>
+                        <label class="flex-1 border bg-white p-2 rounded-lg flex items-center gap-2 text-xs font-medium cursor-pointer">
+                            <input type="radio" name="providerMobile" value="HuriPay"> HuriPay
+                        </label>
+                    </div>
+                    <input type="tel" id="clientPhone" placeholder="Numéro de téléphone (ex: 3320000)" class="w-full bg-white border rounded-lg p-2 text-xs">
+                    <input type="text" id="refTransaction" placeholder="Réf. de transaction SMS" class="w-full bg-white border rounded-lg p-2 text-xs">
+                </div>
+
+                <label class="border rounded-xl p-2.5 flex items-start gap-2.5 cursor-pointer hover:bg-blue-50/50 border-gray-200">
+                    <input type="radio" name="optionPaiement" value="a_bord" onchange="toggleFormPaiement()" class="mt-1">
+                    <div>
+                        <span class="text-xs font-bold text-gray-800 block">Payer à bord / à l'arrivée (Espèces)</span>
+                        <span class="text-[11px] text-gray-500 block">Règlement direct au chauffeur lors de l'embarquement</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="fermerModal()" class="w-1/2 border py-2 rounded-xl text-xs font-medium text-gray-600">Annuler</button>
+                <button onclick="validerReservation()" class="w-1/2 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-xs font-bold shadow">
+                    Confirmer la réservation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIQUE GROUPE 1 + 2 + 3 + 4 -->
+    <script>
+        const COORDONNEES_VILLES = {
+            "Moroni": [-11.7022, 43.2551],
+            "Mitsamiouli": [-11.3847, 43.2844],
+            "Foumboni": [-11.8628, 43.4912],
+            "Mutsamudu": [-12.1672, 44.3963],
+            "Fomboni": [-12.2821, 43.7425]
+        };
+
+        const VEHICULES_CONFIG = {
+            "taxi": { nom: "Taxi-brousse", placesMax: 4, vitesse: 45, prixKm: 40, base: 500, cols: 2 },
+            "minibus": { nom: "Minibus Express", placesMax: 15, vitesse: 50, prixKm: 30, base: 400, cols: 3 },
+            "bus": { nom: "Grand Bus", placesMax: 30, vitesse: 40, prixKm: 25, base: 350, cols: 5 },
+            "vedette": { nom: "Vedette Inter-îles", placesMax: 20, vitesse: 35, prixKm: 150, base: 5000, cols: 4 }
+        };
+
+        // Données avec intégration des champs GROUPE 4 (Statut automatique, retards, etc.)
+        let trajets = JSON.parse(localStorage.getItem('comores_trajets')) || [
+            {
+                id: 1, depart: "Moroni", arrivee: "Foumboni", heure: "08:30", categorie: "taxi",
+                distanceKm: 42, duree: "56 min", prix: 2180, placesReservees: [1, 2],
+                statut: "Programmé", retardMinutes: 0, motifRetard: "",
+                chauffeur: { nom: "Saliou Said", tel: "334-12-88", vehicule: "Peugeot 406", plaque: "4521-KM", note: 4.8 }
+            },
+            {
+                id: 2, depart: "Moroni", arrivee: "Mitsamiouli", heure: "09:00", categorie: "minibus",
+                distanceKm: 40, duree: "48 min", prix: 1600, placesReservees: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                statut: "En retard", retardMinutes: 15, motifRetard: "Embouteillage sortie Moroni",
+                chauffeur: { nom: "Ahmad Ali", tel: "321-45-67", vehicule: "Toyota HiAce", plaque: "8821-KM", note: 4.9 }
+            },
+            {
+                id: 3, depart: "Moroni", arrivee: "Mutsamudu", heure: "07:00", categorie: "vedette",
+                distanceKm: 140, duree: "4h 00min", prix: 26000, placesReservees: [1, 2, 3],
+                statut: "En cours", retardMinutes: 0, motifRetard: "",
+                chauffeur: { nom: "Capitaine Hassani", tel: "345-00-11", vehicule: "Vedette Swift 35", plaque: "VD-09", note: 5.0 }
+            }
+        ];
+
+        let mesBillets = JSON.parse(localStorage.getItem('comores_billets')) || [];
+        let map, routeLayer;
+        let trajetEnCours = null;
+        let siegeChoisi = null;
+
+        function initCarte() {
+            map = L.map('map').setView([-11.7022, 43.2551], 9);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            Object.entries(COORDONNEES_VILLES).forEach(([ville, coords]) => {
+                L.marker(coords).addTo(map).bindPopup(`<b>${ville}</b>`);
+            });
+        }
+
+        function calculerDistance(dep, arr) {
+            const c1 = COORDONNEES_VILLES[dep];
+            const c2 = COORDONNEES_VILLES[arr];
+            if (!c1 || !c2) return 30;
+
+            const R = 6371;
+            const dLat = (c2[0] - c1[0]) * Math.PI / 180;
+            const dLon = (c2[1] - c1[1]) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(c1[0] * Math.PI / 180) * Math.cos(c2[0] * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        }
+
+        function tracerRoute(dep, arr) {
+            const c1 = COORDONNEES_VILLES[dep];
+            const c2 = COORDONNEES_VILLES[arr];
+            if (!c1 || !c2) return;
+
+            if (routeLayer) map.removeLayer(routeLayer);
+            routeLayer = L.polyline([c1, c2], { color: '#2563eb', weight: 4, dashArray: '6, 6' }).addTo(map);
+            map.fitBounds(routeLayer.getBounds(), { padding: [20, 20] });
+        }
+
+        // GROUPE 4 : Mises à jour Automatiques du statut temporel
+        function actualiserStatutsAutomatiques() {
+            const maintenant = new Date();
+            const heureActuelleStr = maintenant.getHours().toString().padStart(2, '0') + ":" + maintenant.getMinutes().toString().padStart(2, '0');
+
+            trajets.forEach(t => {
+                if (t.statut !== "Annulé" && t.statut !== "Terminé") {
+                    if (t.heure < heureActuelleStr && t.statut === "Programmé") {
+                        t.statut = "En cours";
+                    }
+                }
+            });
+            localStorage.setItem('comores_trajets', JSON.stringify(trajets));
+        }
+
+        function afficherTrajets(liste) {
+            actualiserStatutsAutomatiques();
+            const container = document.getElementById('listeTrajets');
+            container.innerHTML = '';
+            document.getElementById('nbTrajetsCount').innerText = `${liste.length} trouvé(s)`;
+
+            if (liste.length === 0) {
+                container.innerHTML = `<div class="bg-white p-4 rounded-xl text-center text-xs text-gray-500">Aucun trajet trouvé.</div>`;
+                return;
+            }
+
+            liste.forEach(t => {
+                const conf = VEHICULES_CONFIG[t.categorie];
+                const libres = conf.placesMax - t.placesReservees.length;
+                const estComplet = libres <= 0 || t.statut === "Annulé" || t.statut === "Terminé";
+
+                // Badges de statut Groupe 4
+                let badgeStatutHTML = '';
+                if (t.statut === "En retard") {
+                    badgeStatutHTML = `<span class="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-clock"></i> Retard +${t.retardMinutes}m</span>`;
+                } else if (t.statut === "En cours") {
+                    badgeStatutHTML = `<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse"><i class="fa-solid fa-bus"></i> En route</span>`;
+                } else if (t.statut === "Annulé") {
+                    badgeStatutHTML = `<span class="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Annulé</span>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-gray-800 text-sm">${t.depart} → ${t.arrivee}</span>
+                                <span class="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">${conf.nom}</span>
+                                ${badgeStatutHTML}
+                            </div>
+                            <div class="text-[11px] text-gray-500 mt-1 flex items-center gap-3">
+                                <span><i class="fa-regular fa-clock text-blue-600"></i> ${t.heure} (${t.duree})</span>
+                                <span><i class="fa-solid fa-road text-gray-400"></i> ${t.distanceKm} km</span>
+                            </div>
+                            ${t.motifRetard ? `<div class="text-[10px] text-orange-600 italic mt-0.5">Note : ${t.motifRetard}</div>` : ''}
+                        </div>
+                        <div class="text-right">
+                            <span class="font-extrabold text-blue-700 text-base block">${t.prix.toLocaleString()} KMF</span>
+                            <span class="text-[11px] font-bold ${estComplet ? 'text-red-500' : 'text-green-600'}">
+                                ${estComplet ? (t.statut === "Annulé" ? 'ANNULÉ' : 'COMPLET') : libres + ' place(s) libre(s)'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-2 rounded-lg text-[11px] flex justify-between items-center border border-gray-100">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-id-card text-gray-400 text-sm"></i>
+                            <div>
+                                <span class="font-bold text-gray-700 block">${t.chauffeur.nom} <span class="text-yellow-500 font-normal">★ ${t.chauffeur.note}</span></span>
+                                <span class="text-gray-500 text-[10px]">${t.chauffeur.vehicule} (${t.chauffeur.plaque})</span>
+                            </div>
+                        </div>
+                        <a href="tel:${t.chauffeur.tel}" class="bg-white border text-blue-600 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-blue-50">
+                            <i class="fa-solid fa-phone"></i> Appeler
+                        </a>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-1 border-t border-gray-100">
+                        <button onclick="tracerRoute('${t.depart}', '${t.arrivee}')" class="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-location-arrow"></i> Voir le tracé
+                        </button>
+                        <button onclick="ouvrirModal(${t.id})" ${estComplet ? 'disabled' : ''} 
+                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition shadow ${estComplet ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}">
+                            ${estComplet ? 'Non disponible' : 'Réserver'}
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function filtrerTrajets() {
+            const dep = document.getElementById('depart').value;
+            const arr = document.getElementById('arrivee').value;
+            const cat = document.getElementById('filtreCategorie').value;
+
+            let res = trajets.filter(t => t.depart === dep && t.arrivee === arr);
+            if (cat !== 'tous') res = res.filter(t => t.categorie === cat);
+
+            afficherTrajets(res);
+            tracerRoute(dep, arr);
+        }
+
+        function ouvrirModal(id) {
+            trajetEnCours = trajets.find(t => t.id === id);
+            if (!trajetEnCours) return;
+            siegeChoisi = null;
+
+            document.getElementById('optionBagage').checked = false;
+            document.getElementById('optionEscale').value = '';
+
+            const conf = VEHICULES_CONFIG[trajetEnCours.categorie];
+            document.getElementById('modalDetails').innerHTML = `
+                <div class="flex justify-between"><span>Route :</span> <strong>${trajetEnCours.depart} → ${trajetEnCours.arrivee}</strong></div>
+                <div class="flex justify-between"><span>Heure & Véhicule :</span> <strong>${trajetEnCours.heure} (${conf.nom})</strong></div>
+            `;
+
+            document.getElementById('modalChauffeurFiche').innerHTML = `
+                <div class="font-bold text-blue-900 border-b border-blue-200 pb-1 flex justify-between">
+                    <span>Chauffeur : ${trajetEnCours.chauffeur.nom}</span>
+                    <span>★ ${trajetEnCours.chauffeur.note}</span>
+                </div>
+                <div class="text-gray-600 flex justify-between pt-1">
+                    <span>Véhicule : ${trajetEnCours.chauffeur.vehicule}</span>
+                    <span>Plaque : <strong>${trajetEnCours.chauffeur.plaque}</strong></span>
+                </div>
+            `;
+
+            const grille = document.getElementById('grilleSieges');
+            grille.style.gridTemplateColumns = `repeat(${conf.cols}, minmax(0, 1fr))`;
+            grille.innerHTML = '';
+
+            for (let i = 1; i <= conf.placesMax; i++) {
+                const estOccupe = trajetEnCours.placesReservees.includes(i);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `p-2 text-xs font-bold rounded-lg border transition ${
+                    estOccupe ? 'bg-red-100 text-red-400 border-red-200 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500'
+                }`;
+                btn.innerText = `S${i}`;
+                if (!estOccupe) btn.onclick = () => choisirSiege(i, btn);
+                grille.appendChild(btn);
+            }
+
+            recalculerPrixModal();
+            document.getElementById('modalReservation').classList.remove('hidden');
+        }
+
+        function choisirSiege(num, btn) {
+            document.querySelectorAll('#grilleSieges button').forEach(b => {
+                if (!b.classList.contains('bg-red-100')) {
+                    b.className = 'p-2 text-xs font-bold rounded-lg border bg-white text-gray-700 border-gray-300';
+                }
+            });
+            btn.className = 'p-2 text-xs font-bold rounded-lg border bg-blue-600 text-white border-blue-600 shadow';
+            siegeChoisi = num;
+        }
+
+        // GROUPE 4 : Recalcul dynamique automatique du prix avec bagages
+        function recalculerPrixModal() {
+            if (!trajetEnCours) return;
+            let total = trajetEnCours.prix;
+            if (document.getElementById('optionBagage').checked) {
+                total += 500;
+            }
+            document.getElementById('prixTotalFinal').innerText = `${total.toLocaleString()} KMF`;
+        }
+
+        function toggleFormPaiement() {
+            const opt = document.querySelector('input[name="optionPaiement"]:checked').value;
+            const zoneMM = document.getElementById('zoneMobileMoney');
+            if (opt === 'maintenant') {
+                zoneMM.classList.remove('hidden');
+            } else {
+                zoneMM.classList.add('hidden');
+            }
+        }
+
+        function validerReservation() {
+            if (!siegeChoisi) {
+                alert("Veuillez choisir un siège disponible !");
+                return;
+            }
+
+            const optionPaiement = document.querySelector('input[name="optionPaiement"]:checked').value;
+            let provider = "Espèces";
+            let statutBillet = "Paiement en attente à bord";
+
+            if (optionPaiement === 'maintenant') {
+                provider = document.querySelector('input[name="providerMobile"]:checked').value;
+                const phone = document.getElementById('clientPhone').value;
+                const ref = document.getElementById('refTransaction').value;
+                if (!phone || !ref) {
+                    alert("Veuillez renseigner le téléphone et la référence Mobile Money !");
+                    return;
+                }
+                statutBillet = "Payé (Confirmé)";
+            }
+
+            let prixCalcul = trajetEnCours.prix;
+            const bagageVolumineux = document.getElementById('optionBagage').checked;
+            if (bagageVolumineux) prixCalcul += 500;
+            const escaleDemandee = document.getElementById('optionEscale').value;
+
+            // Décompte automatique des places
+            trajetEnCours.placesReservees.push(siegeChoisi);
+            localStorage.setItem('comores_trajets', JSON.stringify(trajets));
+
+            const nouveauBillet = {
+                id: 'TICKET-' + Math.floor(100000 + Math.random() * 900000),
+                trajetId: trajetEnCours.id,
+                route: `${trajetEnCours.depart} → ${trajetEnCours.arrivee}`,
+                heure: trajetEnCours.heure,
+                prix: prixCalcul,
+                siege: siegeChoisi,
+                paiement: provider,
+                statut: statutBillet,
+                bagage: bagageVolumineux,
+                escale: escaleDemandee,
+                chauffeur: trajetEnCours.chauffeur
+            };
+
+            mesBillets.unshift(nouveauBillet);
+            localStorage.setItem('comores_billets', JSON.stringify(mesBillets));
+
+            alert(`Réservation effectuée avec succès !\nSiège : S${siegeChoisi}\nStatut : ${statutBillet}`);
+            fermerModal();
+            afficherTrajets(trajets);
+            afficherMesBillets();
+        }
+
+        function fermerModal() {
+            document.getElementById('modalReservation').classList.add('hidden');
+        }
+
+        function afficherMesBillets() {
+            const container = document.getElementById('mesBilletsContainer');
+            container.innerHTML = '';
+
+            if (mesBillets.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-2">Aucun billet réservé.</p>`;
+                return;
+            }
+
+            mesBillets.forEach(b => {
+                const estPaye = b.statut === "Payé (Confirmé)";
+                const div = document.createElement('div');
+                div.className = "bg-gray-50 border rounded-xl p-3 text-xs space-y-2 border-gray-200";
+                div.innerHTML = `
+                    <div class="flex justify-between font-bold text-gray-800">
+                        <span>${b.id}</span>
+                        <span class="${estPaye ? 'text-green-600' : 'text-orange-500'} font-bold">${b.statut}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-600">
+                        <span>${b.route} (Siège S${b.siege})</span>
+                        <strong class="text-blue-700">${b.prix.toLocaleString()} KMF</strong>
+                    </div>
+                    ${b.escale ? `<div class="text-[10px] text-gray-500">Escale demandée : <em>${b.escale}</em></div>` : ''}
+                    <div class="bg-white p-2 rounded border text-[11px] text-gray-500 flex justify-between">
+                        <span>Chauffeur : <strong>${b.chauffeur.nom}</strong> (${b.chauffeur.vehicule})</span>
+                        <span>Mode : <strong>${b.paiement}</strong></span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // GROUPE 4 : Tableau de bord Chauffeur avec Mises à Jour Manuelles
+        function afficherGestionChauffeur() {
+            const container = document.getElementById('listeTrajetsChauffeur');
+            container.innerHTML = '';
+
+            trajets.forEach(t => {
+                const div = document.createElement('div');
+                div.className = "bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs space-y-2";
+                div.innerHTML = `
+                    <div class="flex justify-between items-center font-bold text-gray-800">
+                        <span>${t.depart} → ${t.arrivee} (${t.heure})</span>
+                        <span class="text-blue-600">${t.placesReservees.length} passagers</span>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="signalerRetard(${t.id})" class="flex-1 bg-orange-500 text-white py-1 rounded text-[11px] font-bold">
+                            <i class="fa-solid fa-clock"></i> Ajouter Retard
+                        </button>
+                        <button onclick="changerStatutTrajet(${t.id}, 'En cours')" class="flex-1 bg-green-600 text-white py-1 rounded text-[11px] font-bold">
+                            <i class="fa-solid fa-play"></i> Démarrer
+                        </button>
+                        <button onclick="changerStatutTrajet(${t.id}, 'Annulé')" class="bg-red-600 text-white px-2 py-1 rounded text-[11px] font-bold">
+                            Annuler
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function signalerRetard(id) {
+            const min = prompt("Combien de minutes de retard ? (ex: 15)", "15");
+            const motif = prompt("Motif du retard (optionnel) :", "Embouteillage");
+            if (min) {
+                const t = trajets.find(item => item.id === id);
+                if (t) {
+                    t.statut = "En retard";
+                    t.retardMinutes = parseInt(min);
+                    t.motifRetard = motif || "";
+                    localStorage.setItem('comores_trajets', JSON.stringify(trajets));
+                    alert("Retard signalé aux passagers !");
+                    afficherTrajets(trajets);
+                    afficherGestionChauffeur();
+                }
+            }
+        }
+
+        function changerStatutTrajet(id, nouveauStatut) {
+            const t = trajets.find(item => item.id === id);
+            if (t) {
+                t.statut = nouveauStatut;
+                localStorage.setItem('comores_trajets', JSON.stringify(trajets));
+                alert(`Statut du trajet mis à jour : ${nouveauStatut}`);
+                afficherTrajets(trajets);
+                afficherGestionChauffeur();
+            }
+        }
+
+        function toggleModeAdmin() {
+            const vPassager = document.getElementById('vuePassager');
+            const vAdmin = document.getElementById('vueAdmin');
+            const label = document.getElementById('labelMode');
+
+            if (vPassager.classList.contains('hidden')) {
+                vPassager.classList.remove('hidden');
+                vAdmin.classList.add('hidden');
+                label.innerText = "Espace Chauffeur";
+            } else {
+                vPassager.classList.add('hidden');
+                vAdmin.classList.remove('hidden');
+                label.innerText = "Mode Passager";
+                calculerMetriquesAdmin();
+                afficherGestionChauffeur();
+            }
+        }
+
+        function calculerMetriquesAdmin() {
+            const dep = document.getElementById('newDepart').value;
+            const arr = document.getElementById('newArrivee').value;
+            const cat = document.getElementById('newCategorie').value;
+            const dist = calculerDistance(dep, arr);
+            const conf = VEHICULES_CONFIG[cat];
+
+            const dureeMin = Math.round((dist / conf.vitesse) * 60);
+            const hrs = Math.floor(dureeMin / 60);
+            const mins = dureeMin % 60;
+            const dureeStr = hrs > 0 ? `${hrs}h ${mins}min` : `${mins} min`;
+
+            const prix = conf.base + (dist * conf.prixKm);
+
+            document.getElementById('adminDistance').innerText = `${dist} km`;
+            document.getElementById('adminDuree').innerText = dureeStr;
+            document.getElementById('adminPrixConseille').innerText = `${prix.toLocaleString()} KMF`;
+        }
+
+        function ajouterTrajet(e) {
+            e.preventDefault();
+            const dep = document.getElementById('newDepart').value;
+            const arr = document.getElementById('newArrivee').value;
+            const cat = document.getElementById('newCategorie').value;
+            const heure = document.getElementById('newHeure').value;
+
+            const dist = calculerDistance(dep, arr);
+            const conf = VEHICULES_CONFIG[cat];
+            const dureeMin = Math.round((dist / conf.vitesse) * 60);
+            const hrs = Math.floor(dureeMin / 60);
+            const mins = dureeMin % 60;
+            const dureeStr = hrs > 0 ? `${hrs}h ${mins}min` : `${mins} min`;
+            const prix = conf.base + (dist * conf.prixKm);
+
+            const nouveau = {
+                id: Date.now(),
+                depart: dep,
+                arrivee: arr,
+                heure: heure,
+                categorie: cat,
+                distanceKm: dist,
+                duree: dureeStr,
+                prix: prix,
+                placesReservees: [],
+                statut: "Programmé",
+                retardMinutes: 0,
+                motifRetard: "",
+                chauffeur: {
+                    nom: document.getElementById('newChauffeurNom').value,
+                    tel: document.getElementById('newChauffeurTel').value,
+                    vehicule: document.getElementById('newChauffeurVehicule').value,
+                    plaque: document.getElementById('newChauffeurPlaque').value,
+                    note: 5.0
+                }
+            };
+
+            trajets.unshift(nouveau);
+            localStorage.setItem('comores_trajets', JSON.stringify(trajets));
+            alert("Nouveau trajet publié avec succès !");
+            toggleModeAdmin();
+            afficherTrajets(trajets);
+        }
+
+        window.onload = () => {
+            initCarte();
+            afficherTrajets(trajets);
+            afficherMesBillets();
+        };
+    </script>
+
+    <!-- MODULES GROUPES 5 à 8 (additifs) -->
+    <script>
+/* ===== GROUPE 5 : fiabilité, billets & stats (module additif) =====
+   À coller dans un <script> SÉPARÉ, juste avant </body>, après le script existant. */
+(function () {
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // 1) Notifications "toast" à la place des alert() bloquants
+  const box = document.createElement('div');
+  box.className = 'fixed bottom-4 left-0 right-0 z-[60] flex flex-col items-center gap-2 pointer-events-none px-4';
+  document.body.appendChild(box);
+  function toast(msg) {
+    const t = document.createElement('div');
+    t.className = 'bg-gray-900 text-white text-xs px-4 py-2 rounded-xl shadow-lg whitespace-pre-line max-w-xs text-center';
+    t.textContent = msg;
+    box.appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+  }
+  window.alert = toast;
+
+  // 2) Validation départ ≠ arrivée (recherche + publication)
+  const _filtrer = window.filtrerTrajets;
+  window.filtrerTrajets = function () {
+    if (depart.value === arrivee.value) return toast('Le départ et la destination doivent être différents.');
+    _filtrer();
+  };
+  const _ajouter = window.ajouterTrajet;
+  window.ajouterTrajet = function (e) {
+    if (newDepart.value === newArrivee.value) { e.preventDefault(); return toast('Départ et arrivée identiques.'); }
+    // Protection XSS : on neutralise les champs texte avant stockage
+    ['newChauffeurNom', 'newChauffeurTel', 'newChauffeurVehicule', 'newChauffeurPlaque']
+      .forEach(id => { const el = document.getElementById(id); el.value = esc(el.value.trim()); });
+    _ajouter(e);
+  };
+
+  // 3) Sécurité réservation : siège déjà pris / trajet annulé
+  const _valider = window.validerReservation;
+  window.validerReservation = function () {
+    if (!trajetEnCours) return;
+    if (['Annulé', 'Terminé'].includes(trajetEnCours.statut)) return toast('Ce trajet n\'est plus réservable.');
+    if (siegeChoisi && trajetEnCours.placesReservees.includes(siegeChoisi)) return toast('Siège déjà occupé.');
+    const ph = document.getElementById('clientPhone').value;
+    const mm = document.querySelector('input[name="optionPaiement"]:checked').value === 'maintenant';
+    if (mm && ph && !/^\d{7}$/.test(ph.replace(/[\s-]/g, ''))) return toast('Numéro invalide (7 chiffres, ex: 3320000).');
+    _valider();
+  };
+
+  // 4) Billets : alerte trajet, annulation passager (libère le siège), partage WhatsApp
+  window.annulerBillet = function (id) {
+    const i = mesBillets.findIndex(b => b.id === id);
+    if (i < 0 || !confirm('Annuler ce billet ?')) return;
+    const b = mesBillets[i];
+    const t = trajets.find(x => x.id === b.trajetId);
+    if (t) t.placesReservees = t.placesReservees.filter(s => s !== b.siege);
+    mesBillets.splice(i, 1);
+    localStorage.setItem('comores_trajets', JSON.stringify(trajets));
+    localStorage.setItem('comores_billets', JSON.stringify(mesBillets));
+    toast(b.statut.startsWith('Payé') ? 'Billet annulé. Contactez le chauffeur pour le remboursement.' : 'Billet annulé.');
+    afficherTrajets(trajets); afficherMesBillets();
+  };
+  const _billets = window.afficherMesBillets;
+  window.afficherMesBillets = function () {
+    _billets();
+    const cont = document.getElementById('mesBilletsContainer');
+    [...cont.children].forEach((div, i) => {
+      const b = mesBillets[i]; if (!b) return;
+      const t = trajets.find(x => x.id === b.trajetId);
+      let alerte = '';
+      if (t && t.statut === 'Annulé') alerte = '<div class="bg-red-100 text-red-700 text-[11px] font-bold p-1.5 rounded">⚠ Trajet annulé par le chauffeur</div>';
+      else if (t && t.statut === 'En retard') alerte = `<div class="bg-orange-100 text-orange-700 text-[11px] font-bold p-1.5 rounded">⏱ Retard de ${t.retardMinutes} min${t.motifRetard ? ' : ' + t.motifRetard : ''}</div>`;
+      const msg = `🎫 ${b.id}\n${b.route} à ${b.heure}\nSiège S${b.siege} - ${b.prix} KMF\nChauffeur : ${b.chauffeur.nom} (${b.chauffeur.plaque})`;
+      div.insertAdjacentHTML('beforeend', alerte + `
+        <div class="flex gap-2">
+          <a target="_blank" href="https://wa.me/?text=${encodeURIComponent(msg)}" class="flex-1 text-center bg-green-500 text-white py-1 rounded text-[11px] font-bold"><i class="fa-brands fa-whatsapp"></i> Partager</a>
+          <button onclick="annulerBillet('${b.id}')" class="flex-1 border border-red-300 text-red-600 py-1 rounded text-[11px] font-bold">Annuler le billet</button>
+        </div>`);
+    });
+  };
+
+  // 5) Tableau de bord chauffeur : stats (passagers, taux de remplissage, recettes estimées)
+  const _gestion = window.afficherGestionChauffeur;
+  window.afficherGestionChauffeur = function () {
+    _gestion();
+    const cont = document.getElementById('listeTrajetsChauffeur');
+    const actifs = trajets.filter(t => t.statut !== 'Annulé');
+    const pax = actifs.reduce((s, t) => s + t.placesReservees.length, 0);
+    const cap = actifs.reduce((s, t) => s + VEHICULES_CONFIG[t.categorie].placesMax, 0);
+    const rec = actifs.reduce((s, t) => s + t.prix * t.placesReservees.length, 0);
+    cont.insertAdjacentHTML('afterbegin', `
+      <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+        <div class="bg-blue-50 rounded-lg p-2"><b class="block text-sm text-blue-700">${pax}</b>Passagers</div>
+        <div class="bg-green-50 rounded-lg p-2"><b class="block text-sm text-green-700">${cap ? Math.round(pax / cap * 100) : 0}%</b>Remplissage</div>
+        <div class="bg-yellow-50 rounded-lg p-2"><b class="block text-sm text-yellow-700">${rec.toLocaleString()}</b>KMF estimés</div>
+      </div>`);
+  };
+
+  afficherMesBillets();
+})();
+
+/* ===== GROUPE 6 : croissance & confiance (module additif) =====
+   À coller dans un <script> séparé, APRÈS groupe5.js, avant </body>. */
+(function () {
+  const $ = id => document.getElementById(id);
+  const toast = m => window.alert(m);
+  const save = () => {
+    localStorage.setItem('comores_trajets', JSON.stringify(trajets));
+    localStorage.setItem('comores_billets', JSON.stringify(mesBillets));
+  };
+
+  // 1) Bouton "Inverser départ / destination"
+  $('depart').closest('.grid').insertAdjacentHTML('afterend',
+    '<button type="button" id="btnSwap" class="w-full mb-3 text-[11px] text-blue-600 font-bold"><i class="fa-solid fa-arrow-right-arrow-left"></i> Inverser départ / destination</button>');
+  $('btnSwap').onclick = () => { const d = $('depart').value; $('depart').value = $('arrivee').value; $('arrivee').value = d; };
+
+  // 2) Code PIN pour l'espace chauffeur
+  const _tm = window.toggleModeAdmin;
+  window.toggleModeAdmin = function () {
+    if ($('vueAdmin').classList.contains('hidden') && !window._adminOK) {
+      let pin = localStorage.getItem('comores_pin');
+      if (!pin) {
+        pin = prompt('Créez votre code PIN chauffeur (4 chiffres) :');
+        if (!/^\d{4}$/.test(pin || '')) return toast('PIN invalide (4 chiffres).');
+        localStorage.setItem('comores_pin', pin);
+      } else if (prompt('Code PIN chauffeur :') !== pin) return toast('PIN incorrect.');
+      window._adminOK = true;
+    }
+    _tm();
+  };
+
+  // 3) Codes promo & parrainage
+  const CODES = { BIENVENUE: { pct: 10 }, COMORES: { fixe: 200 } };
+  let codePromo = '';
+  const brut = () => trajetEnCours.prix + ($('optionBagage').checked ? 500 : 0);
+  const remise = () => {
+    const c = CODES[codePromo]; if (!c || !trajetEnCours) return 0;
+    return Math.min(brut(), c.pct ? Math.round(brut() * c.pct / 100) : c.fixe);
+  };
+  const _rp = window.recalculerPrixModal;
+  window.recalculerPrixModal = function () {
+    _rp();
+    if (!trajetEnCours) return;
+    const r = remise();
+    if (r) $('prixTotalFinal').innerText = `${(brut() - r).toLocaleString()} KMF (-${r})`;
+  };
+  window.appliquerPromo = function () {
+    const c = $('promoCode').value.trim().toUpperCase();
+    if (!CODES[c]) { codePromo = ''; recalculerPrixModal(); return toast('Code promo invalide.'); }
+    codePromo = c; recalculerPrixModal(); toast('Code ' + c + ' appliqué !');
+  };
+  const _om = window.ouvrirModal;
+  window.ouvrirModal = function (id) {
+    codePromo = '';
+    if (!$('promoCode')) {
+      $('prixTotalFinal').parentElement.insertAdjacentHTML('beforebegin',
+        '<div class="flex gap-2"><input id="promoCode" placeholder="Code promo" class="flex-1 border rounded-lg p-2 text-xs uppercase"><button type="button" onclick="appliquerPromo()" class="bg-gray-800 text-white px-3 rounded-lg text-xs font-bold">OK</button></div>');
+    }
+    $('promoCode').value = '';
+    _om(id);
+  };
+  const _vr = window.validerReservation;
+  window.validerReservation = function () {
+    const n = mesBillets.length;
+    const r = trajetEnCours ? remise() : 0, prix = trajetEnCours ? brut() - r : 0;
+    _vr();
+    if (mesBillets.length > n && r) {
+      mesBillets[0].prix = prix; mesBillets[0].promo = codePromo; save(); afficherMesBillets();
+    }
+  };
+
+  // 4) Carte d'invitation (croissance via WhatsApp)
+  $('vuePassager').insertAdjacentHTML('afterbegin', `
+    <section class="bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-xl p-3 text-xs flex items-center justify-between gap-3">
+      <span><b>Invitez un ami !</b> Code <b>COMORES</b> = 200 KMF de réduction.</span>
+      <a id="btnInvite" target="_blank" class="bg-white text-green-700 font-bold px-3 py-1.5 rounded-lg whitespace-nowrap"><i class="fa-brands fa-whatsapp"></i> Inviter</a>
+    </section>`);
+  $('btnInvite').href = 'https://wa.me/?text=' + encodeURIComponent('Réserve ton taxi-brousse, bus ou vedette aux Comores sur Comores Express ! Code COMORES = -200 KMF : ' + location.href);
+
+  // 5) Billets : QR code, embarquement, notation du chauffeur
+  const lib = document.createElement('script');
+  lib.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  document.head.appendChild(lib);
+
+  window.afficherQR = function (id) {
+    const el = $('qr-' + id), b = mesBillets.find(x => x.id === id);
+    if (!el || !b) return;
+    if (el.innerHTML) { el.innerHTML = ''; return; }
+    if (typeof QRCode === 'undefined') return toast('QR indisponible hors-ligne : montrez le code ' + id);
+    new QRCode(el, { text: `${b.id}|${b.route}|S${b.siege}`, width: 120, height: 120 });
+  };
+  window.noterChauffeur = function (id, n) {
+    const b = mesBillets.find(x => x.id === id); if (!b || b.note) return;
+    const t = trajets.find(x => x.id === b.trajetId); b.note = n;
+    if (t) {
+      const nb = t.chauffeur.nbAvis || 10;
+      t.chauffeur.note = Math.round(((t.chauffeur.note * nb + n) / (nb + 1)) * 10) / 10;
+      t.chauffeur.nbAvis = nb + 1;
+    }
+    save(); afficherTrajets(trajets); afficherMesBillets(); toast('Merci pour votre avis !');
+  };
+  const _mb = window.afficherMesBillets;
+  window.afficherMesBillets = function () {
+    _mb();
+    [...$('mesBilletsContainer').children].forEach((div, i) => {
+      const b = mesBillets[i]; if (!b) return;
+      let h = `<div class="text-center"><button onclick="afficherQR('${b.id}')" class="text-[11px] text-blue-600 font-bold">Afficher / masquer le QR</button><div id="qr-${b.id}" class="flex justify-center mt-1"></div></div>`;
+      if (b.promo) h += `<div class="text-[10px] text-green-600">Promo ${b.promo} appliquée</div>`;
+      if (b.embarque) {
+        h += '<div class="text-[11px] font-bold text-green-700">✅ Embarqué</div>';
+        h += b.note ? `<div class="text-[11px]">Votre note : ${'★'.repeat(b.note)}</div>`
+          : `<div class="text-[11px]">Noter : ${[1, 2, 3, 4, 5].map(n => `<button onclick="noterChauffeur('${b.id}',${n})" class="text-yellow-500 text-sm">★</button>`).join('')}</div>`;
+      }
+      div.insertAdjacentHTML('beforeend', h);
+    });
+  };
+
+  // 6) Chauffeur : validation du billet à l'embarquement
+  window.validerEmbarquement = function () {
+    const code = $('codeEmbarq').value.trim().toUpperCase();
+    const b = mesBillets.find(x => x.id === code);
+    if (!b) return toast('Billet introuvable.');
+    if (b.embarque) return toast('Billet déjà utilisé.');
+    b.embarque = true;
+    if (b.statut.startsWith('Paiement')) b.statut = 'Payé (Confirmé)';
+    save(); afficherMesBillets(); toast(`Billet valide : ${b.route}, siège S${b.siege}`);
+    $('codeEmbarq').value = '';
+  };
+  const _gc = window.afficherGestionChauffeur;
+  window.afficherGestionChauffeur = function () {
+    _gc();
+    $('listeTrajetsChauffeur').insertAdjacentHTML('afterbegin', `
+      <div class="flex gap-2"><input id="codeEmbarq" placeholder="TICKET-123456" class="flex-1 border rounded-lg p-2 text-xs uppercase">
+      <button onclick="validerEmbarquement()" class="bg-green-600 text-white px-3 rounded-lg text-xs font-bold">Valider</button></div>`);
+  };
+
+  afficherMesBillets();
+})();
+
+/* ===== GROUPE 7 : surprises (météo mer, SOS, sync temps réel, badges, sombre, points) ===== */
+(function () {
+  const $ = id => document.getElementById(id);
+  const toast = m => window.alert(m);
+
+  // 1) Mode sombre (mémorisé)
+  const st = document.createElement('style');
+  st.textContent = `.dk body,.dk{background:#0f172a!important}.dk .bg-white{background:#1e293b!important;color:#e2e8f0}
+  .dk .bg-gray-50,.dk .bg-gray-100{background:#334155!important;color:#e2e8f0}.dk .text-gray-800,.dk .text-gray-700,.dk .text-gray-600{color:#e2e8f0!important}
+  .dk input,.dk select{background:#334155!important;color:#fff!important;border-color:#475569!important}`;
+  document.head.appendChild(st);
+  const root = document.documentElement;
+  if (localStorage.getItem('comores_dark') === '1') root.classList.add('dk');
+  $('btnModeAdmin').insertAdjacentHTML('beforebegin', '<button id="btnDark" class="text-xs px-2 py-1.5 mr-2 rounded-lg bg-blue-800 border border-blue-400">🌓</button>');
+  $('btnDark').onclick = () => { root.classList.toggle('dk'); localStorage.setItem('comores_dark', root.classList.contains('dk') ? '1' : '0'); };
+
+  // 2) Météo marine en direct (Open-Meteo, sans clé) quand on trace une route
+  const _tr = window.tracerRoute;
+  window.tracerRoute = function (dep, arr) {
+    _tr(dep, arr);
+    const c = COORDONNEES_VILLES[dep]; if (!c) return;
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c[0]}&longitude=${c[1]}&current=wind_speed_10m,precipitation`)
+      .then(r => r.json()).then(d => {
+        const v = Math.round(d.current.wind_speed_10m), pluie = d.current.precipitation > 0;
+        const alerte = v >= 30 ? ' ⚠ mer agitée possible' : '';
+        $('carteInfo').innerHTML = `${dep} : 💨 ${v} km/h ${pluie ? '🌧' : '☀'}${alerte}`;
+        $('carteInfo').className = 'text-[11px] font-bold ' + (v >= 30 ? 'text-red-600' : 'text-gray-500');
+      }).catch(() => {});
+  };
+
+  // 3) Badges "Moins cher" et "Plus tôt" sur la liste
+  const _at = window.afficherTrajets;
+  window.afficherTrajets = function (liste) {
+    _at(liste);
+    const ok = liste.filter(t => t.statut !== 'Annulé' && t.statut !== 'Terminé');
+    if (ok.length < 2) return;
+    const moins = ok.reduce((a, b) => b.prix < a.prix ? b : a);
+    const tot = ok.reduce((a, b) => b.heure < a.heure ? b : a);
+    [...$('listeTrajets').children].forEach((card, i) => {
+      const t = liste[i]; if (!t) return;
+      let b = '';
+      if (t === moins) b += '<span class="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full mr-1">💰 Moins cher</span>';
+      if (t === tot) b += '<span class="bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">⚡ Plus tôt</span>';
+      if (b) card.insertAdjacentHTML('afterbegin', `<div>${b}</div>`);
+    });
+  };
+
+  // 4) Bouton SOS : envoie votre position par WhatsApp
+  document.body.insertAdjacentHTML('beforeend', '<button id="btnSOS" class="fixed bottom-4 right-4 z-40 bg-red-600 text-white w-12 h-12 rounded-full shadow-xl text-xs font-extrabold">SOS</button>');
+  $('btnSOS').onclick = () => {
+    if (!confirm('Envoyer votre position par WhatsApp ?')) return;
+    navigator.geolocation.getCurrentPosition(
+      p => window.open('https://wa.me/?text=' + encodeURIComponent(`🆘 J'ai besoin d'aide. Ma position : https://maps.google.com/?q=${p.coords.latitude},${p.coords.longitude}`), '_blank'),
+      () => toast('Position indisponible. Autorisez la localisation.'));
+  };
+
+  // 5) Points fidélité (1 point / 100 KMF) affichés sur le titre des billets
+  const _mb = window.afficherMesBillets;
+  window.afficherMesBillets = function () {
+    _mb();
+    const pts = mesBillets.reduce((s, b) => s + Math.floor(b.prix / 100), 0);
+    const h = document.querySelector('#mesBilletsContainer').previousElementSibling;
+    if (h) h.innerHTML = h.innerHTML.replace(/ ⭐ \d+ pts$/, '') + ` ⭐ ${pts} pts`;
+  };
+
+  // 6) Synchronisation temps réel entre onglets (chauffeur ↔ passager)
+  window.addEventListener('storage', e => {
+    if (e.key !== 'comores_trajets' && e.key !== 'comores_billets') return;
+    trajets = JSON.parse(localStorage.getItem('comores_trajets')) || trajets;
+    mesBillets = JSON.parse(localStorage.getItem('comores_billets')) || [];
+    afficherTrajets(trajets); afficherMesBillets();
+    if ($('vueAdmin') && !$('vueAdmin').classList.contains('hidden')) afficherGestionChauffeur();
+    toast('🔄 Données mises à jour en direct');
+  });
+
+  afficherMesBillets();
+})();
+
+/* ===== GROUPE 8 : liste d'attente, arrivée estimée, compte à rebours, dernière recherche ===== */
+(function () {
+  const $ = id => document.getElementById(id);
+  const toast = m => window.alert(m);
+  const hm = h => { const [a, b] = h.split(':').map(Number); return a * 60 + b; };
+  const fmt = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+  const dureeMin = s => { const h = /(\d+)\s*h/.exec(s), m = /(\d+)\s*min/.exec(s); return (h ? +h[1] * 60 : 0) + (m ? +m[1] : 0); };
+  let derniere = null;
+  let attente = JSON.parse(localStorage.getItem('comores_attente') || '[]');
+  const saveA = () => localStorage.setItem('comores_attente', JSON.stringify(attente));
+
+  window.rejoindreAttente = function (id) {
+    if (attente.includes(id)) return toast('Vous êtes déjà sur la liste d\'attente.');
+    attente.push(id); saveA();
+    toast('🔔 Vous serez prévenu dès qu\'une place se libère.');
+    afficherTrajets(derniere || trajets);
+  };
+
+  const _at = window.afficherTrajets;
+  window.afficherTrajets = function (liste) {
+    derniere = liste; _at(liste);
+    // Alerte quand une place se libère
+    attente = attente.filter(id => {
+      const t = trajets.find(x => x.id === id); if (!t) return false;
+      if (VEHICULES_CONFIG[t.categorie].placesMax - t.placesReservees.length > 0 && t.statut !== 'Annulé') {
+        toast(`🔔 Place libre : ${t.depart} → ${t.arrivee} à ${t.heure}`); return false;
+      }
+      return true;
+    });
+    saveA();
+    const n = new Date(), nm = n.getHours() * 60 + n.getMinutes();
+    [...$('listeTrajets').children].forEach((card, i) => {
+      const t = liste[i]; if (!t) return;
+      const dep = hm(t.heure) + (t.retardMinutes || 0), d = dep - nm;
+      const cd = t.statut === 'En cours' ? '' : d > 0 ? `Départ dans ${d >= 60 ? Math.floor(d / 60) + 'h ' + d % 60 + 'min' : d + ' min'}` : '';
+      const head = card.querySelector('.flex.justify-between.items-start');
+      if (head) head.insertAdjacentHTML('afterend', `<div class="text-[11px] text-gray-500 flex justify-between"><span>🏁 Arrivée vers ${fmt(dep + dureeMin(t.duree))}</span><span class="font-bold text-blue-600">${cd}</span></div>`);
+      const complet = VEHICULES_CONFIG[t.categorie].placesMax - t.placesReservees.length <= 0 && !['Annulé', 'Terminé'].includes(t.statut);
+      if (complet) card.insertAdjacentHTML('beforeend', attente.includes(t.id)
+        ? '<div class="text-center text-[11px] font-bold text-green-600">✔ Sur liste d\'attente</div>'
+        : `<button onclick="rejoindreAttente(${t.id})" class="w-full border border-blue-300 text-blue-600 py-1 rounded-lg text-[11px] font-bold">🔔 Me prévenir si une place se libère</button>`);
+    });
+  };
+
+  // Mémorise la dernière recherche
+  const _f = window.filtrerTrajets;
+  window.filtrerTrajets = function () {
+    _f();
+    localStorage.setItem('comores_recherche', JSON.stringify([$('depart').value, $('arrivee').value, $('filtreCategorie').value]));
+  };
+  window.addEventListener('load', () => {
+    try {
+      const r = JSON.parse(localStorage.getItem('comores_recherche'));
+      if (r) { $('depart').value = r[0]; $('arrivee').value = r[1]; $('filtreCategorie').value = r[2]; filtrerTrajets(); }
+    } catch (e) {}
+  });
+
+  // Actualisation automatique toutes les minutes (compte à rebours)
+  setInterval(() => afficherTrajets(derniere || trajets), 60000);
+})();
+
+    </script>
+        <footer class="text-center text-[11px] text-gray-500 pb-6 space-x-3">
+        <a href="politique-confidentialite.html" class="underline">Politique de confidentialité</a>
+    </footer>
+    <script src="config.js"></script>
+    <script src="extensions.js"></script>
+    <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+</body>
+</html>
